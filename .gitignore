@@ -17,3 +17,4 @@ wheels/
 *test*.txt
 dataset.csv
 *.db
+*.png
