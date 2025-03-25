@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+MAX_STEP = 50
+
 def transform_sim_data(simulationLog, dql_model):
     records = []
     order_id = 1
@@ -55,13 +57,13 @@ def parse_all_seq(data):
     
     return sequences
 
-def encode_onehot(sequences, max_step, num_questions):
+def encode_onehot(sequences, num_questions):
     # Calculate the number of chunks (each of size max_step)
-    chunks_per_seq = [max(1, (len(q) + max_step - 1) // max_step) for q, a in sequences]
+    chunks_per_seq = [max(1, (len(q) + MAX_STEP - 1) // MAX_STEP) for q, a in sequences]
     total_chunks = sum(chunks_per_seq)
     
     # Pre-allocate the result array
-    result = np.zeros((total_chunks * max_step, 2 * num_questions))
+    result = np.zeros((total_chunks * MAX_STEP, 2 * num_questions))
     
     chunk_idx = 0
     for seq_idx, (q, a) in enumerate(sequences):
@@ -69,9 +71,9 @@ def encode_onehot(sequences, max_step, num_questions):
         # Fill in the onehot values
         for i, q_id in enumerate(q):
             index = int(q_id if a[i] > 0 else q_id + num_questions)
-            result_idx = chunk_idx * max_step + i
+            result_idx = chunk_idx * MAX_STEP + i
             result[result_idx, index] = 1
         
         chunk_idx += chunks_per_seq[seq_idx]
     
-    return result.reshape(-1, max_step, 2 * num_questions)
+    return result.reshape(-1, MAX_STEP, 2 * num_questions)

@@ -3,23 +3,25 @@ from scipy.stats import truncnorm
 import numpy as np
 from simulation_const import REGULATION, SYNTAX_ELEMENT_COUNT_CAP
 
-
 def calc_complexity(frequency):
     regulation = REGULATION
     if(frequency>=SYNTAX_ELEMENT_COUNT_CAP): return 1
-    return ((frequency)**(1/regulation))/(1+((frequency)**(1/regulation))) 
+    return ((frequency**(1 / regulation)) / (10 + (frequency**(1 / regulation))))
 
 def calc_frequency(complexity):
     regulation = REGULATION
-    if(complexity>=1): return SYNTAX_ELEMENT_COUNT_CAP
-    x = -complexity/(1-complexity)
-    if(x<0): x = x*-1
-    result = x**regulation
-    if(result>SYNTAX_ELEMENT_COUNT_CAP): return SYNTAX_ELEMENT_COUNT_CAP
-    return result
+    if complexity >= 1:
+        return SYNTAX_ELEMENT_COUNT_CAP
+    if complexity <= 0:
+        return 0
+    x = (10 * complexity / (1 - complexity)) ** regulation
+    if x > SYNTAX_ELEMENT_COUNT_CAP:
+        return SYNTAX_ELEMENT_COUNT_CAP
+    return round(x)
+
 
 def create_random_task(dql_model: dict[str, list[str]]):
-    return {key: [random.randint(0, 7) for _ in dql_model[key]] for key in dql_model}
+    return {key: [random.randint(0, SYNTAX_ELEMENT_COUNT_CAP) for _ in dql_model[key]] for key in dql_model}
 
 def create_optimal_task(dql_model: dict[str, list[str]], learner_competency: dict[str, list[float]], scaffolding_bonus: dict[str, list[float]]):
     return {
