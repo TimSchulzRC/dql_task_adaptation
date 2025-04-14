@@ -15,6 +15,7 @@ dependencies = [
     "optuna-dashboard>=0.17.0",
     "pandas>=2.2.3",
     "numpy>=2.2.3",
+    "edudata>=0.0.18",
 ]
 
 [dependency-groups]
