@@ -15,6 +15,7 @@ wheels/
 *.npy
 *train*.txt
 *test*.txt
-dataset.csv
+*.csv
+*.zip
 *.db
 *.png

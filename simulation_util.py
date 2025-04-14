@@ -1,7 +1,9 @@
 import random
-from scipy.stats import truncnorm
 import numpy as np
-from simulation_const import REGULATION, SYNTAX_ELEMENT_COUNT_CAP
+from simulation_const import REGULATION, SYNTAX_ELEMENT_COUNT_CAP, SEED
+
+np.random.seed(SEED)
+random.seed(SEED)
 
 def calc_complexity(frequency):
     regulation = REGULATION
@@ -83,12 +85,13 @@ def rgbeta(n: int, mean: float, var: float, min: float = 0, max: float = 1) -> f
 def create_learner_scaffolded_competence_bonuses(dql_model: dict[str, list[str]], bonus_distribution: tuple[4]):
     return {key: rgbeta(len(dql_model[key]), *bonus_distribution) for key in dql_model}
 
+def min_max_norm(X):
+    min_x = np.min(X)
+    max_x = np.max(X)
+    return (X - min_x) / (max_x - min_x)
 
 def sample_from_snd_vectorized_and_normalize(X: list[float], mean=0.5, sd=0.1):
-    # Generate random normal samples and normalize
-    lower, upper = 0, 1
-    a, b = (lower - mean) / sd, (upper - mean) / sd
-    samples = truncnorm.rvs(a, b, loc=mean, scale=sd, size=len(X))
+    samples = np.random.normal(loc=mean, scale=sd, size=len(X))
     return (samples).tolist()
 
 
