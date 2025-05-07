@@ -8,7 +8,7 @@ random.seed(SEED)
 def calc_complexity(frequency):
     regulation = REGULATION
     if(frequency>=SYNTAX_ELEMENT_COUNT_CAP): return 1
-    return ((frequency**(1 / regulation)) / (10 + (frequency**(1 / regulation))))
+    return ((frequency**(1 / regulation)) / (20 + (frequency**(1 / regulation))))
 
 def calc_frequency(complexity):
     regulation = REGULATION
@@ -16,7 +16,7 @@ def calc_frequency(complexity):
         return SYNTAX_ELEMENT_COUNT_CAP
     if complexity <= 0:
         return 0
-    x = (10 * complexity / (1 - complexity)) ** regulation
+    x = (20 * complexity / (1 - complexity)) ** regulation
     if x > SYNTAX_ELEMENT_COUNT_CAP:
         return SYNTAX_ELEMENT_COUNT_CAP
     return round(x)
@@ -28,7 +28,7 @@ def create_random_task(dql_model: dict[str, list[str]]):
 def create_optimal_task(dql_model: dict[str, list[str]], learner_competency: dict[str, list[float]], scaffolding_bonus: dict[str, list[float]]):
     return {
         key: [
-            calc_frequency(learner_competency[key][i] + scaffolding_bonus[key][i]) for i in range(len(dql_model[key]))
+            calc_frequency(min(learner_competency[key][i] + scaffolding_bonus[key][i], 1)) for i in range(len(dql_model[key]))
         ] for key in dql_model
     }
     
@@ -55,6 +55,20 @@ def calculate_delta(learner_competency: dict[str, list[str]], task_complexities:
                 result[key].append(c - k)
     return result
 
+def calculate_solved(learner_competency: dict[str, list[str]], task_complexities: dict[str, list[str]], scaffolding_bonus: dict[str, list[str]]):
+    result = {}
+    for key in learner_competency:
+        result[key] = []
+        for i in range(len(learner_competency[key])):
+            k = learner_competency[key][i]
+            c = task_complexities[key][i]
+            t = scaffolding_bonus[key][i]
+            if (c <= k+t):
+                result[key].append(True)
+            else:
+                result[key].append(False)
+    return result
+
 
 def add_delta_to_competency(competency: dict[str, list[str]], delta: dict[str, list[str]]):
     return {key: [competency[key][i] + delta[key][i] for i in range(len(competency[key]))] for key in competency}
@@ -70,14 +84,8 @@ def rgbeta(n: int, mean: float, var: float, min: float = 0, max: float = 1) -> f
         raise ValueError(
             f"var must be less than (mean - min) * (max - mean) = {dmin * dmax}")
 
-    mx = (mean - min) / (max - min)
-    vx = var / (max - min) ** 2
-
-    a = ((1 - mx) / vx - 1 / mx) * mx ** 2
-    b = a * (1 / mx - 1)
-
-    x = np.random.beta(a, b, n)
-    y = (max - min) * x + min
+    x = np.random.beta(6,6, n)
+    y = (max - min) * x
 
     return y.tolist()
 
@@ -90,18 +98,22 @@ def min_max_norm(X):
     max_x = np.max(X)
     return (X - min_x) / (max_x - min_x)
 
-def sample_from_snd_vectorized_and_normalize(X: list[float], mean=0.5, sd=0.1):
+def sample_from_snd_vectorized_and_normalize(X: list[float], mean=0, sd=1):
     samples = np.random.normal(loc=mean, scale=sd, size=len(X))
-    return (samples).tolist()
+    return min_max_norm(samples).tolist()
+
+def sample_from_rgbeta(len: int):
+    x = np.random.beta(6, 6, len)
+    return x.tolist()
+
+def create_learner_competencies(dql_model: dict[str, list[str]]):
+    # return {key: sample_from_snd_vectorized_and_normalize(dql_model[key]) for key in dql_model}
+    return {key: sample_from_rgbeta(len(dql_model[key])) for key in dql_model}
 
 
-def create_learner_competencies(dql_model: dict[str, list[str]], mean: float):
-    return {key: sample_from_snd_vectorized_and_normalize(dql_model[key], mean) for key in dql_model}
-
-
-def create_learner_population(learner_count: int, task_count: int, dql_model: dict[str, list[str]], mean_competency: float, bonus_distribution: tuple[4]):
+def create_learner_population(learner_count: int, task_count: int, dql_model: dict[str, list[str]], bonus_distribution: tuple[4]):
     population = {
-        "learner_competencies": [create_learner_competencies(dql_model, mean=mean_competency) for _ in range(learner_count)],
+        "learner_competencies": [create_learner_competencies(dql_model) for _ in range(learner_count)],
         "scaffolding_competence_bonus_per_step_and_learner": [[create_learner_scaffolded_competence_bonuses(dql_model, bonus_distribution) for _ in range(learner_count)] for _ in range(task_count)]
     }
     return population

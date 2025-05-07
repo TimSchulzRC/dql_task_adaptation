@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from simulation_const import DQL_MODEL
 from simulation_util import calc_task_complexities
+import numpy as np
+import scipy.stats as stats
 
 def plot_simulation_log(simulationLog: dict[str, list[list[float]]], learnerId: int):
     task_count = len(simulationLog[learnerId]["tasks"])
@@ -185,3 +187,157 @@ def plot_mean_across_categories(simulationLog):
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.savefig("sql_task_adaptation_all_categories_mean.png", dpi=300, bbox_inches="tight")
+    
+    
+def plot_starting_competencies_distribution(simulationLog):
+    """
+    Plot the distribution of starting competencies across all learners,
+    aggregated over all categories.
+    """
+    plt.figure(figsize=(12, 7))
+    
+    # Extract starting competencies for each learner across all categories
+    all_starting_competencies = []
+    
+    for learner_id in range(len(simulationLog)):
+        # Get first task competencies
+        if simulationLog[learner_id]["competencies"]:
+            first_competencies = simulationLog[learner_id]["competencies"][0]
+            learner_avg_competency = []
+            
+            for key in DQL_MODEL:
+                if key in first_competencies:
+                    values = first_competencies[key]
+                    avg_value = sum(values) / len(values) if values else 0
+                    learner_avg_competency.append(avg_value)
+            
+            # Average across all categories for this learner
+            if learner_avg_competency:
+                all_starting_competencies.append(sum(learner_avg_competency) / len(learner_avg_competency))
+    
+    # Create histogram and calculate KDE for smoother distribution line
+    plt.hist(all_starting_competencies, bins=100, alpha=0.5, density=True, label='Histogramm')
+    
+    # Add KDE curve if there's enough data
+    if len(all_starting_competencies) > 5:
+        kde = stats.gaussian_kde(all_starting_competencies)
+        x = np.linspace(0, 1, 1000)
+        plt.plot(x, kde(x), 'r-', linewidth=2, label='Verteilung')
+    
+    plt.axvline(sum(all_starting_competencies) / len(all_starting_competencies), 
+                color='green', linestyle='dashed', linewidth=2, label='Mittelwert')
+    
+    plt.xlim(0, 1)
+    plt.ylabel("Dichte", fontsize=20)
+    plt.xlabel("Initiales Kompetenzniveau (Durchschnitt über alle Syntaxelemente)", fontsize=20)
+    # plt.title("Verteilung der Anfangskompetenzen aller Lernenden")
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(fontsize=20)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.tight_layout()
+    plt.savefig("starting_competencies_distribution.png", dpi=300, bbox_inches="tight")
+    
+    
+    
+def plot_detailed_starting_competencies_distribution(simulationLog):
+    """
+    Plot the distribution of all individual starting competency values across learners
+    without aggregating across categories.
+    """
+    plt.figure(figsize=(12, 7))
+    
+    # First, determine total number of competency values to avoid resizing arrays
+    number_elements_dql_model = 0
+    for key in DQL_MODEL:
+        number_elements_dql_model += len(DQL_MODEL[key])
+    total_values = number_elements_dql_model * len(simulationLog)
+    
+    # Pre-allocate array with correct size
+    all_starting_competencies = np.zeros(total_values)
+    
+    # Fill the array without resizing
+    idx = 0
+    for learner_id in range(len(simulationLog)):
+        if simulationLog[learner_id]["competencies"]:
+            first_competencies = simulationLog[learner_id]["competencies"][0]
+            for key in DQL_MODEL:
+                if key in first_competencies:
+                    values_length = len(first_competencies[key])
+                    all_starting_competencies[idx:idx+values_length] = first_competencies[key]
+                    idx += values_length
+    
+    # Create histogram and calculate KDE for smoother distribution line
+    plt.hist(all_starting_competencies, bins=100, alpha=0.5, density=True, label='Histogramm')
+    
+    # Add KDE curve if there's enough data
+    if len(all_starting_competencies) > 5:
+        kde = stats.gaussian_kde(all_starting_competencies)
+        x = np.linspace(0, 1, 1000)
+        plt.plot(x, kde(x), 'r-', linewidth=2, label='Verteilung')
+    
+    plt.axvline(np.mean(all_starting_competencies), 
+                color='green', linestyle='dashed', linewidth=2, label='Mittelwert')
+    
+    plt.xlim(0, 1)
+    plt.ylabel("Dichte", fontsize=20)
+    plt.xlabel("Initiale Kompetenzwerte (alle Syntaxelemente)", fontsize=20)
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(fontsize=20)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.tight_layout()
+    plt.savefig("detailed_starting_competencies_distribution.png", dpi=300, bbox_inches="tight")
+
+    
+def plot_scaffolding_bonus_distribution(simulationLog):
+    """
+    Plot the distribution of scaffolding bonuses across all learners and tasks,
+    aggregated over all categories.
+    """
+    plt.figure(figsize=(12, 7))
+    
+    # Extract all scaffolding bonus values
+    all_bonus_values = []
+    
+    for learner_id in range(len(simulationLog)):
+        for task_id in range(len(simulationLog[learner_id]["scaffolding_bonuses"])):
+            task_bonuses = simulationLog[learner_id]["scaffolding_bonuses"][task_id]
+            
+            for key in DQL_MODEL:
+                if key in task_bonuses:
+                    # Add all individual bonus values to the list
+                    all_bonus_values.extend(task_bonuses[key])
+    
+    # Filter out zero values to focus on actual bonuses
+    nonzero_bonuses = [b for b in all_bonus_values if b > 0]
+    
+    if nonzero_bonuses:
+        # Create histogram and calculate KDE for smoother distribution line
+        plt.hist(nonzero_bonuses, bins=50, alpha=0.5, density=True, label='Histogramm')
+        
+        # Add KDE curve if there's enough data
+        if len(nonzero_bonuses) > 5:
+            kde = stats.gaussian_kde(nonzero_bonuses)
+            x = np.linspace(min(nonzero_bonuses), max(nonzero_bonuses), 1000)
+            plt.plot(x, kde(x), 'r-', linewidth=2, label='Verteilung')
+        
+        plt.axvline(sum(nonzero_bonuses) / len(nonzero_bonuses), 
+                    color='green', linestyle='dashed', linewidth=2, label='Mittelwert')
+        
+        plt.ylabel("Dichte", fontsize=20)
+        plt.xlabel("Scaffolding-Bonus Werte", fontsize=20)
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(fontsize=20)
+        plt.xticks(fontsize=14)
+        plt.yticks(fontsize=14)
+        plt.tight_layout()
+        plt.savefig("scaffolding_bonus_distribution.png", dpi=300, bbox_inches="tight")
+    else:
+        plt.text(0.5, 0.5, "No scaffolding bonuses found in the data", 
+                ha='center', va='center', fontsize=16)
+        plt.tight_layout()
+        plt.savefig("scaffolding_bonus_distribution.png", dpi=300, bbox_inches="tight")
+        
+        
+        

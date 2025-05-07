@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import random
+import tqdm
 
 MAX_STEP = 50
 
@@ -77,3 +79,18 @@ def encode_onehot(sequences, num_questions):
         chunk_idx += chunks_per_seq[seq_idx]
     
     return result.reshape(-1, MAX_STEP, 2 * num_questions)
+
+def train_test_split(data, train_size=.7, shuffle=True):
+    if shuffle:
+        random.shuffle(data)
+    boundary = round(len(data) * train_size)
+    return data[: boundary], data[boundary:]
+
+def sequences2tl(sequences, trgpath):
+    with open(trgpath, 'w', encoding='utf8') as f:
+        for seq in tqdm.tqdm(sequences, 'write into file: '):
+            questions, answers = seq
+            seq_len = len(questions)
+            f.write(str(seq_len) + '\n')
+            f.write(','.join([str(q) for q in questions]) + '\n')
+            f.write(','.join([str(a) for a in answers]) + '\n')

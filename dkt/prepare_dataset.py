@@ -61,25 +61,13 @@ from loader import parse_all_seq
 sequences = parse_all_seq(data)
 
 # %%
-def train_test_split(data, train_size=.7, shuffle=True):
-    if shuffle:
-        random.shuffle(data)
-    boundary = round(len(data) * train_size)
-    return data[: boundary], data[boundary:]
+from loader import train_test_split
 
 
 train_sequences, test_sequences = train_test_split(sequences, train_size=args.train_size)
 
 # %%
-def sequences2tl(sequences, trgpath):
-    with open(trgpath, 'a', encoding='utf8') as f:
-        for seq in tqdm.tqdm(sequences, 'write into file: '):
-            questions, answers = seq
-            seq_len = len(questions)
-            f.write(str(seq_len) + '\n')
-            f.write(','.join([str(q) for q in questions]) + '\n')
-            f.write(','.join([str(a) for a in answers]) + '\n')
-
+from loader import sequences2tl
 
 # save triple line format for other tasks
 sequences2tl(train_sequences, FILE_PREFIX + 'train.txt')
