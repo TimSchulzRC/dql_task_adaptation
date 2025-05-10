@@ -22,8 +22,7 @@ def plot_simulation_log(simulationLog: dict[str, list[list[float]]], learnerId: 
             aggregated_competency_values.append(competency_aggregated)
 
             # Get task complexity value
-            task_values = calc_task_complexities(
-                simulationLog[learnerId]["tasks"][i])[key]
+            task_values = simulationLog[learnerId]["task_complexities"][i][key]
             task_aggregated = sum(task_values)/len(task_values)
             aggregated_task_values.append(task_aggregated)
 
@@ -123,7 +122,7 @@ def plot_mean_across_categories(simulationLog):
     # Find the maximum task count among all learners
     max_task_count = max(len(log["tasks"]) for log in simulationLog)
     
-    plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(12, 7), dpi=300)
     
     # Initialize lists to store aggregated values
     mean_competency_values = [[] for _ in range(max_task_count)]
@@ -147,7 +146,7 @@ def plot_mean_across_categories(simulationLog):
                 task_competency_avg.append(competency_aggregated)
                 
                 # Get task complexity value
-                task_values = calc_task_complexities(simulationLog[learner_id]["tasks"][task_id])[key]
+                task_values = simulationLog[learner_id]["task_complexities"][task_id][key]
                 task_aggregated = sum(task_values)/len(task_values)
                 task_complexity_avg.append(task_aggregated)
                 
@@ -172,18 +171,19 @@ def plot_mean_across_categories(simulationLog):
     valid_task_count = max(i for i, values in enumerate(mean_competency_values) if values) + 1
     
     plt.plot(range(valid_task_count), mean_competency_across_learners[:valid_task_count],
-            'b-', linewidth=2, label='Overall competency')
+            'b-', linewidth=2, label='Durchschnittliches tatsächliches Kompetenzniveau')
     plt.plot(range(valid_task_count), mean_task_across_learners[:valid_task_count],
-            'r:', linewidth=2, label='Overall task complexity')
+            'r:', linewidth=2, label='Durchschnittliche Aufgabenkomplexität')
     plt.plot(range(valid_task_count), mean_competency_plus_bonus_across_learners[:valid_task_count],
-            'g--', linewidth=2, label='Overall competency + scaffolding bonus')
+            'g--', linewidth=2, label='Durchschnittliches potentielles Kompetenzniveau')
     
     plt.ylim(0, 1)
     plt.xlim(0, valid_task_count-1)
-    plt.ylabel("Mean Competency Across Categories")
-    plt.xlabel("Task Number")
-    plt.title("Overall Competency Progression (All Categories Combined)")
-    plt.legend()
+    plt.yticks(np.arange(0, 1, 0.1))
+    plt.ylabel("Aufgabenkomplexität / Kompetenzniveau", fontsize=16)
+    plt.xlabel("Aufgabe zum Zeitpunkt t", fontsize=16)
+    # plt.title("Overall Competency Progression (All Categories Combined)")
+    plt.legend(fontsize=16)
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.tight_layout()
     plt.savefig("sql_task_adaptation_all_categories_mean.png", dpi=300, bbox_inches="tight")

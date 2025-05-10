@@ -2,7 +2,7 @@ SEED = 42
 
 SYNTAX_ELEMENT_COUNT_CAP = 10
 REGULATION = 0.4
-MAX_TASK_COUNT =100
+MAX_TASK_COUNT =50
 
 DQL_MODEL = {
     "join": ["inner_join", "outer_join", "self_join"],
